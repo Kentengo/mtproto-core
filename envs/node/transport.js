@@ -4,7 +4,7 @@ const Obfuscated = require('../../src/transport/obfuscated');
 const baseDebug = require('../../src/utils/common/base-debug');
 
 class Transport extends Obfuscated {
-  constructor(dc, crypto) {
+  constructor(dc, crypto, proxy) {
     super();
 
     this.dc = dc;

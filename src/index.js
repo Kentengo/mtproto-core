@@ -102,7 +102,7 @@ function makeMTProto(envMethods) {
       // @TODO: defaultDcId may be a string
       const dcId = options.dcId || (await this.storage.get('defaultDcId')) || 2;
 
-      const rpc = this.getRPC(dcId);
+      const rpc = await this.getRPC(dcId);
 
       if(!rpc){
         // return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
