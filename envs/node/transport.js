@@ -1,4 +1,5 @@
 const net = require('net');
+const SocksClient = require('socks').SocksClient
 const Obfuscated = require('../../src/transport/obfuscated');
 const baseDebug = require('../../src/utils/common/base-debug');
 
@@ -9,8 +10,10 @@ class Transport extends Obfuscated {
     this.dc = dc;
     this.debug = baseDebug.extend(`transport-${this.dc.id}`);
     this.crypto = crypto;
+    this.proxy = proxy
+    this.fail = false;
 
-    this.connect();
+    // this.connect();
   }
 
   get isAvailable() {
@@ -18,19 +21,77 @@ class Transport extends Obfuscated {
   }
 
   connect() {
-    this.stream = new Uint8Array();
+    return new Promise(async resolve=> {
 
-    this.socket = net.connect(
-      this.dc.port,
-      this.dc.ip,
-      this.handleConnect.bind(this)
-    );
+      try {
 
-    this.socket.on('data', this.handleData.bind(this));
-    this.socket.on('error', this.handleError.bind(this));
-    this.socket.on('close', this.handleClose.bind(this));
+        this.stream = new Uint8Array();
 
-    this.debug('connect');
+        if (this.proxy && this.proxy.host && this.proxy.port && this.proxy.type) {
+
+          const options = {
+            proxy      : {
+              host: this.proxy.host, // ipv4 or ipv6 or hostname
+              port: this.proxy.port,
+              type: this.proxy.type // Proxy version (4 or 5)
+            },
+            command    : 'connect', // SOCKS command (createConnection factory function only supports the connect command
+            destination: {
+              host: this.dc.ip,
+              port: this.dc.port
+            }
+          }
+
+          console.log(options)
+
+
+          let socketProxy = await SocksClient.createConnection(options);
+
+          console.log(socketProxy)
+
+          this.socket = socketProxy.socket;
+          // this.handleConnect.bind(this)
+          this.handleConnect()
+
+
+        } else {
+
+
+          this.socket = net.connect(
+              this.dc.port,
+              this.dc.ip,
+              this.handleConnect.bind(this)
+          );
+        }
+
+        this.socket.on('data', this.handleData.bind(this));
+        this.socket.on('error', this.handleError.bind(this));
+        this.socket.on('close', this.handleClose.bind(this));
+
+        this.debug('connect');
+
+        resolve()
+      }
+      catch(e){
+        // console.log('e:165')
+        // console.log(e)
+
+        this.proxy.failCounter++
+
+
+        if(this.proxy.failCounter>10){
+          this.fail = true;
+          this.proxy.failureCallback()
+          return resolve()
+        }
+
+
+
+        // return setTimeout(async ()=>{ await this.connect()},2000)
+        return resolve( setTimeout(async ()=>{ await this.connect()},2000))
+        // return setTimeout(async ()=>{ this.connect()},2000)
+      }
+    })
   }
 
   async handleData(data) {

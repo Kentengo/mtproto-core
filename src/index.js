@@ -75,10 +75,11 @@ function makeMTProto(envMethods) {
 
   return class {
     constructor(options) {
-      const { api_id, api_hash, storageOptions } = options;
+      const { api_id, api_hash, storageOptions, proxy } = options;
 
       this.api_id = api_id;
       this.api_hash = api_hash;
+      this.proxy = proxy
 
       this.initConnectionParams = {};
 
@@ -102,6 +103,12 @@ function makeMTProto(envMethods) {
       const dcId = options.dcId || (await this.storage.get('defaultDcId')) || 2;
 
       const rpc = this.getRPC(dcId);
+
+      if(!rpc){
+        // return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
+        throw new Error({error_code:'000', error_message:'Не удалось подключиться'})
+        return;
+      }
 
       const result = await rpc.call(method, params);
 
@@ -154,29 +161,38 @@ function makeMTProto(envMethods) {
     }
 
     getRPC(dcId) {
-      if (this.rpcs.has(dcId)) {
-        return this.rpcs.get(dcId);
-      }
 
-      const dc = this.dcList.find(({ id }) => id === dcId);
+      return new Promise(async resolve=> {
+        if (this.rpcs.has(dcId)) {
+          return resolve(this.rpcs.get(dcId));
+        }
 
-      if (!dc) {
-        debug(`don't find DC ${dcId}`);
+        const dc = this.dcList.find(({id}) => id === dcId);
 
-        return;
-      }
+        if (!dc) {
+          debug(`don't find DC ${dcId}`);
 
-      const transport = this.envMethods.createTransport(dc, this.crypto);
+          return resolve(false);
+        }
 
-      const rpc = new RPC({
-        dc,
-        context: this,
-        transport,
-      });
+        const transport = this.envMethods.createTransport(dc, this.crypto, this.proxy);
 
-      this.rpcs.set(dcId, rpc);
+        await transport.connect()
 
-      return rpc;
+        if(transport.fail){
+          return resolve(false);
+        }
+
+        const rpc = new RPC({
+          dc,
+          context: this,
+          transport,
+        });
+
+        this.rpcs.set(dcId, rpc);
+
+        return resolve(rpc);
+      })
     }
 
     updateInitConnectionParams(params) {
