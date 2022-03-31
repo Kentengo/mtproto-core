@@ -5,16 +5,16 @@ const builderMap = require('../tl/builder');
 const Serializer = require('../tl/serializer');
 const Deserializer = require('../tl/deserializer');
 const {
-  xorBytes,
-  intsToLong,
-  concatBytes,
-  getRandomInt,
-  bytesIsEqual,
-  bigIntToBytes,
-  bytesToBigInt,
-  longToBytesRaw,
-  bytesToBytesRaw,
-} = require('../utils/common');
+        xorBytes,
+        intsToLong,
+        concatBytes,
+        getRandomInt,
+        bytesIsEqual,
+        bigIntToBytes,
+        bytesToBigInt,
+        longToBytesRaw,
+        bytesToBytesRaw,
+      } = require('../utils/common');
 const baseDebug = require('../utils/common/base-debug');
 const pqPrimeFactorization = require('../crypto/pq');
 
@@ -35,8 +35,8 @@ class RPC {
 
     this.updateSession();
 
-    // this.transport.on('open', this.handleTransportOpen.bind(this));
-    this.transport.on('error', this.handleTransportError.bind(this));
+    // this.transport.on('open', ()=>{ console.log('Был опен'); this.handleTransportOpen.bind(this)});
+    this.transport.on('error', ()=>{ console.log('Был error');this.handleTransportError.bind(this)});
     this.transport.on('message', this.handleTransportMessage.bind(this));
 
     this.sendAcks = debounce(() => {
@@ -83,32 +83,36 @@ class RPC {
   }
 
   async handleTransportOpen() {
-	  return new Promise(async resolve=> {
-		  const authKey    = await this.getStorageItem('authKey');
-		  const serverSalt = await this.getStorageItem('serverSalt');
+    console.log('handleTransportOpen')
 
-		  if (authKey && serverSalt) {
-			  this.handleMessage = this.handleEncryptedMessage;
-			  this.isAuth        = true;
-			  this.sendWaitMessages();
+    return new Promise(async resolve=>{
+      const authKey = await this.getStorageItem('authKey');
+      const serverSalt = await this.getStorageItem('serverSalt');
 
-			  // This request is necessary to ensure that you start interacting with the server. If we have not made any request, the server will not send us updates.
-			  this.call('help.getConfig')
-				  .then((result) => {
-					  // TODO: Handle config
-					  return resolve()
-				  })
-				  .catch((error) => {
-					  this.debug(`error when calling the method help.getConfig:`, error);
-					  return resolve()
-				  });
-		  } else {
-			  this.nonce         = this.crypto.getRandomBytes(16);
-			  this.handleMessage = this.handlePQResponse;
-			  this.sendPlainMessage(builderMap.mt_req_pq_multi, {nonce: this.nonce});
-			  return resolve()
-		  }
-	  })
+      if (authKey && serverSalt) {
+        this.handleMessage = this.handleEncryptedMessage;
+        this.isAuth = true;
+        this.sendWaitMessages();
+
+        // This request is necessary to ensure that you start interacting with the server. If we have not made any request, the server will not send us updates.
+        this.call('help.getConfig')
+            .then((result) => {
+              // TODO: Handle config
+              return resolve()
+            })
+            .catch((error) => {
+              this.debug(`error when calling the method help.getConfig:`, error);
+              return resolve()
+            });
+      } else {
+        this.nonce = this.crypto.getRandomBytes(16);
+        this.handleMessage = this.handlePQResponse;
+        this.sendPlainMessage(builderMap.mt_req_pq_multi, { nonce: this.nonce });
+        return resolve()
+      }
+    })
+
+
   }
 
   async handleTransportMessage(buffer) {
@@ -123,18 +127,18 @@ class RPC {
 
     const responsePQ = deserializer.predicate();
     const {
-      pq,
-      nonce,
-      server_nonce,
-      server_public_key_fingerprints,
-    } = responsePQ;
+            pq,
+            nonce,
+            server_nonce,
+            server_public_key_fingerprints,
+          } = responsePQ;
 
     if (!bytesIsEqual(this.nonce, nonce)) {
       throw new Error('The nonce are not equal');
     }
 
     const publicKey = await this.crypto.rsa.getRsaKeyByFingerprints(
-      server_public_key_fingerprints
+        server_public_key_fingerprints
     );
 
     const [p, q] = pqPrimeFactorization(pq);
@@ -190,40 +194,40 @@ class RPC {
     }
 
     this.tmpAesKey = concatBytes(
-      await this.crypto.SHA1(concatBytes(this.newNonce, this.serverNonce)),
-      (
-        await this.crypto.SHA1(concatBytes(this.serverNonce, this.newNonce))
-      ).slice(0, 12)
+        await this.crypto.SHA1(concatBytes(this.newNonce, this.serverNonce)),
+        (
+            await this.crypto.SHA1(concatBytes(this.serverNonce, this.newNonce))
+        ).slice(0, 12)
     );
     this.tmpAesIV = concatBytes(
-      (
-        await this.crypto.SHA1(concatBytes(this.serverNonce, this.newNonce))
-      ).slice(12, 20),
-      await this.crypto.SHA1(concatBytes(this.newNonce, this.newNonce)),
-      this.newNonce.slice(0, 4)
+        (
+            await this.crypto.SHA1(concatBytes(this.serverNonce, this.newNonce))
+        ).slice(12, 20),
+        await this.crypto.SHA1(concatBytes(this.newNonce, this.newNonce)),
+        this.newNonce.slice(0, 4)
     );
 
     const decryptedData = new AES.IGE(this.tmpAesKey, this.tmpAesIV).decrypt(
-      encrypted_answer
+        encrypted_answer
     );
     const innerDataHash = decryptedData.slice(0, 20);
     const innerDeserializer = new Deserializer(decryptedData.slice(20).buffer);
     const serverDHInnerData = innerDeserializer.predicate();
 
     if (
-      !bytesIsEqual(
-        innerDataHash,
-        await this.crypto.SHA1(
-          decryptedData.slice(20, 20 + innerDeserializer.offset)
+        !bytesIsEqual(
+            innerDataHash,
+            await this.crypto.SHA1(
+                decryptedData.slice(20, 20 + innerDeserializer.offset)
+            )
         )
-      )
     ) {
       throw new Error('Invalid hash in DH params decrypted data');
     }
 
     await this.context.storage.set(
-      'timeOffset',
-      Math.floor(Date.now() / 1000) - serverDHInnerData.server_time
+        'timeOffset',
+        Math.floor(Date.now() / 1000) - serverDHInnerData.server_time
     );
 
     this.dhPrime = bytesToBigInt(serverDHInnerData.dh_prime);
@@ -241,8 +245,8 @@ class RPC {
     }
 
     if (
-      dhPrime.toString(16) !==
-      'c71caeb9c6b1c9048e6c522f70f13f73980d40238e3e21c14934d037563d930f48198a0aa7c14058229493d22530f4dbfa336f6e0ac925139543aed44cce7c3720fd51f69458705ac68cd4fe6b6b13abdc9746512969328454f18faf8c595f642477fe96bb2a941d5bcd1d4ac8cc49880708fa9b378e3c4f3a9060bee67cf9a4a4a695811051907e162753b56b0f6b410dba74d8a84b2a14b3144e0ef1284754fd17ed950d5965b4b9dd46582db1178d169c6bc465b0d6ff9ca3928fef5b9ae4e418fc15e83ebea0f87fa9ff5eed70050ded2849f47bf959d956850ce929851f0d8115f635b105ee2e4e15d04b2454bf6f4fadf034b10403119cd8e3b92fcc5b'
+        dhPrime.toString(16) !==
+        'c71caeb9c6b1c9048e6c522f70f13f73980d40238e3e21c14934d037563d930f48198a0aa7c14058229493d22530f4dbfa336f6e0ac925139543aed44cce7c3720fd51f69458705ac68cd4fe6b6b13abdc9746512969328454f18faf8c595f642477fe96bb2a941d5bcd1d4ac8cc49880708fa9b378e3c4f3a9060bee67cf9a4a4a695811051907e162753b56b0f6b410dba74d8a84b2a14b3144e0ef1284754fd17ed950d5965b4b9dd46582db1178d169c6bc465b0d6ff9ca3928fef5b9ae4e418fc15e83ebea0f87fa9ff5eed70050ded2849f47bf959d956850ce929851f0d8115f635b105ee2e4e15d04b2454bf6f4fadf034b10403119cd8e3b92fcc5b'
     ) {
       throw new Error('Server_DH_inner_data.dh_prime incorrect');
     }
@@ -253,7 +257,7 @@ class RPC {
 
     if (gA.greaterOrEquals(dhPrime.minus(bigInt.one))) {
       throw new Error(
-        'Server_DH_inner_data.g_a incorrect: g_a >= dh_prime - 1'
+          'Server_DH_inner_data.g_a incorrect: g_a >= dh_prime - 1'
       );
     }
 
@@ -265,7 +269,7 @@ class RPC {
 
     if (gA.greaterOrEquals(dhPrime.minus(twoPow))) {
       throw new Error(
-        'Server_DH_inner_data.g_a incorrect: g_a >= dh_prime - 2^{2048-64}'
+          'Server_DH_inner_data.g_a incorrect: g_a >= dh_prime - 2^{2048-64}'
       );
     }
   }
@@ -274,15 +278,15 @@ class RPC {
     const b = bytesToBigInt(this.crypto.getRandomBytes(256));
     const authKey = bigIntToBytes(this.gA.modPow(b, this.dhPrime));
     const serverSalt = xorBytes(
-      this.newNonce.slice(0, 8),
-      this.serverNonce.slice(0, 8)
+        this.newNonce.slice(0, 8),
+        this.serverNonce.slice(0, 8)
     );
 
     await this.setStorageItem('authKey', bytesToBytesRaw(authKey));
     await this.setStorageItem('serverSalt', bytesToBytesRaw(serverSalt));
 
     this.authKeyAuxHash = bytesToBytesRaw(
-      (await this.crypto.SHA1(authKey)).slice(0, 8)
+        (await this.crypto.SHA1(authKey)).slice(0, 8)
     );
 
     const serializer = new Serializer(builderMap.mt_client_DH_inner_data, {
@@ -298,11 +302,11 @@ class RPC {
     const paddingLength = 16 - ((innerDataHash.length + innerData.length) % 16);
 
     const encryptedData = new AES.IGE(this.tmpAesKey, this.tmpAesIV).encrypt(
-      concatBytes(
-        innerDataHash,
-        innerData,
-        this.crypto.getRandomBytes(paddingLength)
-      )
+        concatBytes(
+            innerDataHash,
+            innerData,
+            this.crypto.getRandomBytes(paddingLength)
+        )
     );
 
     this.sendPlainMessage(builderMap.mt_set_client_DH_params, {
@@ -334,9 +338,9 @@ class RPC {
 
     if (serverDHAnswer._ === 'mt_dh_gen_ok') {
       const hash = (
-        await this.crypto.SHA1(
-          concatBytes(this.newNonce, [1], this.authKeyAuxHash)
-        )
+          await this.crypto.SHA1(
+              concatBytes(this.newNonce, [1], this.authKeyAuxHash)
+          )
       ).slice(4, 20);
 
       if (!bytesIsEqual(hash, serverDHAnswer.new_nonce_hash1)) {
@@ -352,9 +356,9 @@ class RPC {
 
     if (serverDHAnswer._ === 'mt_dh_gen_retry') {
       const hash = (
-        await this.crypto.SHA1(
-          concatBytes(this.newNonce, [2], this.authKeyAuxHash)
-        )
+          await this.crypto.SHA1(
+              concatBytes(this.newNonce, [2], this.authKeyAuxHash)
+          )
       ).slice(4, 20);
 
       if (!bytesIsEqual(hash, serverDHAnswer.new_nonce_hash2)) {
@@ -368,9 +372,9 @@ class RPC {
 
     if (serverDHAnswer._ === 'mt_dh_gen_fail') {
       const hash = (
-        await this.crypto.SHA1(
-          concatBytes(this.newNonce, [3], this.authKeyAuxHash)
-        )
+          await this.crypto.SHA1(
+              concatBytes(this.newNonce, [3], this.authKeyAuxHash)
+          )
       ).slice(4, 20);
 
       if (!bytesIsEqual(hash, serverDHAnswer.new_nonce_hash3)) {
@@ -411,13 +415,13 @@ class RPC {
     const encryptedData = deserializer.byteView.slice(deserializer.offset);
 
     const plaintextData = (
-      await this.getAESInstance(authKey, messageKey, true)
+        await this.getAESInstance(authKey, messageKey, true)
     ).decrypt(encryptedData);
 
     const computedMessageKey = (
-      await this.crypto.SHA256(
-        concatBytes(authKey.slice(96, 128), plaintextData)
-      )
+        await this.crypto.SHA256(
+            concatBytes(authKey.slice(96, 128), plaintextData)
+        )
     ).slice(8, 24);
 
     if (!bytesIsEqual(messageKey, computedMessageKey)) {
@@ -436,8 +440,8 @@ class RPC {
 
     if (length > plaintextData.length) {
       console.warn(
-        `Length in message ${messageId} to exceed the plaintext length:`,
-        `${length} > ${plaintextData.length}`
+          `Length in message ${messageId} to exceed the plaintext length:`,
+          `${length} > ${plaintextData.length}`
       );
 
       return;
@@ -445,7 +449,7 @@ class RPC {
 
     if (length % 4 !== 0) {
       console.warn(
-        `Length ${length} in message ${messageId} is not a multiple of four`
+          `Length ${length} in message ${messageId} is not a multiple of four`
       );
 
       return;
@@ -488,8 +492,8 @@ class RPC {
 
       if (message.error_code === 48) {
         await this.setStorageItem(
-          'serverSalt',
-          longToBytesRaw(message.new_server_salt)
+            'serverSalt',
+            longToBytesRaw(message.new_server_salt)
         );
       }
 
@@ -505,8 +509,8 @@ class RPC {
 
       if (waitMessage) {
         this.call(waitMessage.method, waitMessage.params)
-          .then(waitMessage.resolve)
-          .catch(waitMessage.reject);
+            .then(waitMessage.resolve)
+            .catch(waitMessage.reject);
         this.messagesWaitResponse.delete(message.bad_msg_id);
       } else {
         this.debug(`${message._} for a non-existent message`, message);
@@ -520,8 +524,8 @@ class RPC {
 
       this.ackMessage(messageId);
       await this.setStorageItem(
-        'serverSalt',
-        longToBytesRaw(message.server_salt)
+          'serverSalt',
+          longToBytesRaw(message.server_salt)
       );
 
       return;
@@ -575,6 +579,12 @@ class RPC {
   }
 
   async call(method, params = {}) {
+
+    console.log('rpc.call')
+    console.log(this.isReady)
+    console.log(this.isAuth)
+    console.log(this.transport.isAvailable)
+
     if (!this.isReady) {
       return new Promise((resolve, reject) => {
         this.messagesWaitAuth.push({ method, params, resolve, reject });
@@ -582,6 +592,9 @@ class RPC {
     }
 
     const { api_id, api_hash } = this.context;
+
+    console.log('this.context')
+    console.log(this.context)
 
     const initConnectionParams = {
       api_id,
@@ -607,9 +620,15 @@ class RPC {
       },
     });
 
+    console.log('serializer')
+    console.log(serializer)
+
     const bytes = serializer.getBytes();
 
     return new Promise(async (resolve, reject) => {
+
+      console.log('aaaaaaaaa')
+
       const messageId = await this.sendEncryptedMessage(bytes);
       const messageIdAsKey = intsToLong(messageId[0], messageId[1]);
 
@@ -662,11 +681,11 @@ class RPC {
     const plainData = plainDataSerializer.getBytes();
 
     const messageKeyLarge = await crypto.SHA256(
-      concatBytes(authKey.slice(88, 120), plainData)
+        concatBytes(authKey.slice(88, 120), plainData)
     );
     const messageKey = messageKeyLarge.slice(8, 24);
     const encryptedData = (
-      await this.getAESInstance(authKey, messageKey, false)
+        await this.getAESInstance(authKey, messageKey, false)
     ).encrypt(plainData);
 
     const authKeyId = (await crypto.SHA1(authKey)).slice(-8);
@@ -721,8 +740,8 @@ class RPC {
     let messageId = [timeSec, (timeMSec << 21) | (random << 3) | 4];
 
     if (
-      lastMessageId[0] > messageId[0] ||
-      (lastMessageId[0] == messageId[0] && lastMessageId[1] >= messageId[1])
+        lastMessageId[0] > messageId[0] ||
+        (lastMessageId[0] == messageId[0] && lastMessageId[1] >= messageId[1])
     ) {
       messageId = [lastMessageId[0], lastMessageId[1] + 4];
     }
@@ -755,20 +774,20 @@ class RPC {
   async getAESInstance(authKey, messageKey, isServer) {
     const x = isServer ? 8 : 0;
     const sha256a = await this.crypto.SHA256(
-      concatBytes(messageKey, authKey.slice(x, 36 + x))
+        concatBytes(messageKey, authKey.slice(x, 36 + x))
     );
     const sha256b = await this.crypto.SHA256(
-      concatBytes(authKey.slice(40 + x, 76 + x), messageKey)
+        concatBytes(authKey.slice(40 + x, 76 + x), messageKey)
     );
     const aesKey = concatBytes(
-      sha256a.slice(0, 8),
-      sha256b.slice(8, 24),
-      sha256a.slice(24, 32)
+        sha256a.slice(0, 8),
+        sha256b.slice(8, 24),
+        sha256a.slice(24, 32)
     );
     const aesIV = concatBytes(
-      sha256b.slice(0, 8),
-      sha256a.slice(8, 24),
-      sha256b.slice(24, 32)
+        sha256b.slice(0, 8),
+        sha256a.slice(8, 24),
+        sha256b.slice(24, 32)
     );
     return new AES.IGE(aesKey, aesIV);
   }

@@ -66,7 +66,7 @@ function makeMTProto(envMethods) {
   ];
 
   const envMethodsIsValid = requiredEnvMethods.every(
-    (methodName) => methodName in envMethods
+      (methodName) => methodName in envMethods
   );
 
   if (!envMethodsIsValid) {
@@ -90,8 +90,8 @@ function makeMTProto(envMethods) {
       this.rpcs = new Map();
       this.crypto = new Crypto(this.envMethods);
       this.storage = new Storage(
-        storageOptions,
-        this.envMethods.getLocalStorage
+          storageOptions,
+          this.envMethods.getLocalStorage
       );
       this.updates = new EventEmitter();
     }
@@ -104,19 +104,33 @@ function makeMTProto(envMethods) {
 
       const rpc = await this.getRPC(dcId);
 
+      console.log('rpc')
+      console.log(rpc)
+
       if(!rpc){
+        console.log('нет рпц')
+
         return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
         // throw new Error({error_code:'000', error_message:'Не удалось подключиться'})
-        // return;
+        return;
       }
 
+      // try {
       const result = await rpc.call(method, params);
+
+      console.log('result rpc call')
+      console.log(result)
 
       if (syncAuth && result._ === 'auth.authorization') {
         await this.syncAuth(dcId);
       }
 
       return result;
+      // }
+      // catch(e){
+      //   console.log('131')
+      //   console.log(e)
+      // }
     }
 
     syncAuth(dcId) {
@@ -128,27 +142,27 @@ function makeMTProto(envMethods) {
         }
 
         const promise = this.call(
-          'auth.exportAuthorization',
-          {
-            dc_id: dc.id,
-          },
-          { dcId }
+            'auth.exportAuthorization',
+            {
+              dc_id: dc.id,
+            },
+            { dcId }
         )
-          .then((result) => {
-            return this.call(
-              'auth.importAuthorization',
-              {
-                id: result.id,
-                bytes: result.bytes,
-              },
-              { dcId: dc.id, syncAuth: false }
-            );
-          })
-          .catch((error) => {
-            debug(`error when copy auth to DC ${dc.id}`, error);
+            .then((result) => {
+              return this.call(
+                  'auth.importAuthorization',
+                  {
+                    id: result.id,
+                    bytes: result.bytes,
+                  },
+                  { dcId: dc.id, syncAuth: false }
+              );
+            })
+            .catch((error) => {
+              debug(`error when copy auth to DC ${dc.id}`, error);
 
-            return Promise.resolve();
-          });
+              return Promise.resolve();
+            });
 
         promises.push(promise);
       });
@@ -178,6 +192,9 @@ function makeMTProto(envMethods) {
         const transport = this.envMethods.createTransport(dc, this.crypto, this.proxy);
 
         await transport.connect()
+
+        console.log('transport')
+        console.log(transport)
 
         if(transport.fail){
           return resolve(false);

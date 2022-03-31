@@ -42,11 +42,13 @@ class Transport extends Obfuscated {
             }
           }
 
+          console.log('options')
           console.log(options)
 
 
           let socketProxy = await SocksClient.createConnection(options);
 
+          console.log('socketProxy')
           console.log(socketProxy)
 
           this.socket = socketProxy.socket;
@@ -73,8 +75,8 @@ class Transport extends Obfuscated {
         resolve()
       }
       catch(e){
-        // console.log('e:165')
-        // console.log(e)
+        console.log('e:165')
+        console.log(e)
 
         this.proxy.failCounter++
 
@@ -88,7 +90,6 @@ class Transport extends Obfuscated {
         await this.sleep(2000)
 
         return resolve(await this.connect())
-
         // return setTimeout(async ()=>{ await this.connect()},2000)
         // return resolve( setTimeout(async ()=>{ await this.connect()},2000))
         // return setTimeout(async ()=>{ this.connect()},2000)
@@ -150,6 +151,7 @@ class Transport extends Obfuscated {
   }
 
   async handleConnect() {
+
     return new Promise(async resolve=>{
       console.log('handleConnect')
 
@@ -159,8 +161,15 @@ class Transport extends Obfuscated {
 
       this.emit('open');
 
+      // this.emit('error', {
+      //   type: 'transport',
+      //   code:123,
+      // });
+
       return resolve()
     })
+
+
   }
 
   async send(bytes) {
