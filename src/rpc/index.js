@@ -35,7 +35,7 @@ class RPC {
 
     this.updateSession();
 
-    this.transport.on('open', ()=>{ console.log('Был опен'); this.handleTransportOpen.bind(this)});
+    this.transport.on('open', ()=>{ console.log('Был опен'); this.handleTransportOpen()});
     this.transport.on('error', ()=>{ console.log('Был error');this.handleTransportError.bind(this)});
     this.transport.on('message', this.handleTransportMessage.bind(this));
 
