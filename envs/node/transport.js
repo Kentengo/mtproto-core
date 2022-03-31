@@ -51,7 +51,7 @@ class Transport extends Obfuscated {
 
           this.socket = socketProxy.socket;
           // this.handleConnect.bind(this)
-          this.handleConnect()
+          await this.handleConnect()
 
 
         } else {
