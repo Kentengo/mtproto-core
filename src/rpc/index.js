@@ -83,27 +83,32 @@ class RPC {
   }
 
   async handleTransportOpen() {
-    const authKey = await this.getStorageItem('authKey');
-    const serverSalt = await this.getStorageItem('serverSalt');
+	  return new Promise(async resolve=> {
+		  const authKey    = await this.getStorageItem('authKey');
+		  const serverSalt = await this.getStorageItem('serverSalt');
 
-    if (authKey && serverSalt) {
-      this.handleMessage = this.handleEncryptedMessage;
-      this.isAuth = true;
-      this.sendWaitMessages();
+		  if (authKey && serverSalt) {
+			  this.handleMessage = this.handleEncryptedMessage;
+			  this.isAuth        = true;
+			  this.sendWaitMessages();
 
-      // This request is necessary to ensure that you start interacting with the server. If we have not made any request, the server will not send us updates.
-      this.call('help.getConfig')
-        .then((result) => {
-          // TODO: Handle config
-        })
-        .catch((error) => {
-          this.debug(`error when calling the method help.getConfig:`, error);
-        });
-    } else {
-      this.nonce = this.crypto.getRandomBytes(16);
-      this.handleMessage = this.handlePQResponse;
-      this.sendPlainMessage(builderMap.mt_req_pq_multi, { nonce: this.nonce });
-    }
+			  // This request is necessary to ensure that you start interacting with the server. If we have not made any request, the server will not send us updates.
+			  this.call('help.getConfig')
+				  .then((result) => {
+					  // TODO: Handle config
+					  return resolve()
+				  })
+				  .catch((error) => {
+					  this.debug(`error when calling the method help.getConfig:`, error);
+					  return resolve()
+				  });
+		  } else {
+			  this.nonce         = this.crypto.getRandomBytes(16);
+			  this.handleMessage = this.handlePQResponse;
+			  this.sendPlainMessage(builderMap.mt_req_pq_multi, {nonce: this.nonce});
+			  return resolve()
+		  }
+	  })
   }
 
   async handleTransportMessage(buffer) {

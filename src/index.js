@@ -105,9 +105,9 @@ function makeMTProto(envMethods) {
       const rpc = await this.getRPC(dcId);
 
       if(!rpc){
-        // return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
-        throw new Error({error_code:'000', error_message:'Не удалось подключиться'})
-        return;
+        return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
+        // throw new Error({error_code:'000', error_message:'Не удалось подключиться'})
+        // return;
       }
 
       const result = await rpc.call(method, params);
@@ -188,6 +188,8 @@ function makeMTProto(envMethods) {
           context: this,
           transport,
         });
+
+        await rpc.handleTransportOpen();
 
         this.rpcs.set(dcId, rpc);
 

@@ -79,19 +79,27 @@ class Transport extends Obfuscated {
         this.proxy.failCounter++
 
 
-        if(this.proxy.failCounter>10){
+        if(this.proxy.failCounter>100){
           this.fail = true;
           this.proxy.failureCallback()
           return resolve()
         }
 
+        await this.sleep(2000)
 
+        return resolve(await this.connect())
 
         // return setTimeout(async ()=>{ await this.connect()},2000)
-        return resolve( setTimeout(async ()=>{ await this.connect()},2000))
+        // return resolve( setTimeout(async ()=>{ await this.connect()},2000))
         // return setTimeout(async ()=>{ this.connect()},2000)
       }
     })
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   async handleData(data) {
@@ -138,15 +146,21 @@ class Transport extends Obfuscated {
       this.socket.destroy();
     }
 
-    this.connect();
+    await this.connect();
   }
 
   async handleConnect() {
-    const initialMessage = await this.generateObfuscationKeys();
+    return new Promise(async resolve=>{
+      console.log('handleConnect')
 
-    this.socket.write(initialMessage);
+      const initialMessage = await this.generateObfuscationKeys();
 
-    this.emit('open');
+      this.socket.write(initialMessage);
+
+      this.emit('open');
+
+      return resolve()
+    })
   }
 
   async send(bytes) {
