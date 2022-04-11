@@ -620,8 +620,8 @@ class RPC {
       },
     });
 
-    console.log('serializer')
-    console.log(serializer)
+    // console.log('serializer')
+    // console.log(serializer)
 
     const bytes = serializer.getBytes();
 
