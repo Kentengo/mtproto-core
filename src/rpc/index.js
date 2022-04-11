@@ -593,8 +593,8 @@ class RPC {
 
     const { api_id, api_hash } = this.context;
 
-    console.log('this.context')
-    console.log(this.context)
+    // console.log('this.context')
+    // console.log(this.context)
 
     const initConnectionParams = {
       api_id,
