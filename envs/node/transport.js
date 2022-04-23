@@ -42,6 +42,13 @@ class Transport extends Obfuscated {
             }
           }
 
+          if(this.proxy.login && this.proxy.pass && this.proxy.login!=='' && this.proxy.pass!==''){
+
+            options.proxy.userId = this.proxy.login
+            options.proxy.password = this.proxy.pass
+
+          }
+
           console.log('options')
           console.log(options)
 
