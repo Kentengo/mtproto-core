@@ -83,7 +83,7 @@ function makeMTProto(envMethods) {
 
       this.initConnectionParams = {};
 
-      this.dcList = !!options.test ? TEST_DC_LIST : PRODUCTION_DC_LIST;
+      this.dcList = !!options.test ? TEST_DC_LIST : (options.dcList ? [...options.dcList, PRODUCTION_DC_LIST] :PRODUCTION_DC_LIST);
 
       this.envMethods = envMethods;
 
