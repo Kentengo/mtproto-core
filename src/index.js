@@ -93,7 +93,14 @@ function makeMTProto(envMethods) {
           storageOptions,
           this.envMethods.getLocalStorage
       );
+
+      if(options.dcList){
+        this.storage.set('defaultDcId', options.dcList[0].id)
+      }
+
       this.updates = new EventEmitter();
+
+
     }
 
     async call(method, params = {}, options = {}) {
