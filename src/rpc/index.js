@@ -276,7 +276,15 @@ class RPC {
 
   async generateDH(retryId = 0) {
     const b = bytesToBigInt(this.crypto.getRandomBytes(256));
-    const authKey = bigIntToBytes(this.gA.modPow(b, this.dhPrime));
+    let authKey = await this.getStorageItem('authKey')
+
+    console.log(authKey)
+
+    if(!authKey){
+      authKey = bigIntToBytes(this.gA.modPow(b, this.dhPrime));
+    }
+
+
     const serverSalt = xorBytes(
         this.newNonce.slice(0, 8),
         this.serverNonce.slice(0, 8)
