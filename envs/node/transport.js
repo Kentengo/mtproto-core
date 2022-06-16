@@ -94,7 +94,7 @@ class Transport extends Obfuscated {
           return resolve()
         }
 
-        await this.sleep(2000)
+        await this.sleep(0)
 
         return resolve(await this.connect())
         // return setTimeout(async ()=>{ await this.connect()},2000)
