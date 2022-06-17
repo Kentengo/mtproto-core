@@ -211,6 +211,7 @@ function makeMTProto(envMethods) {
           dc,
           context: this,
           transport,
+          reconnect: this.proxy.reconnect
         });
 
         await rpc.handleTransportOpen();

@@ -19,11 +19,12 @@ const baseDebug = require('../utils/common/base-debug');
 const pqPrimeFactorization = require('../crypto/pq');
 
 class RPC {
-  constructor({ dc, context, transport }) {
+  constructor({ dc, context, transport, reconnect }) {
     this.dc = dc;
     this.crypto = context.crypto;
     this.context = context;
     this.transport = transport;
+    this.reconnect = reconnect;
 
     this.debug = baseDebug.extend(`rpc-${this.dc.id}`);
     this.debug('init');
@@ -88,6 +89,9 @@ class RPC {
     return new Promise(async resolve=>{
       const authKey = await this.getStorageItem('authKey');
       const serverSalt = await this.getStorageItem('serverSalt');
+
+      // console.log(authKey)
+      // console.log(serverSalt)
 
       if (authKey && serverSalt) {
         this.handleMessage = this.handleEncryptedMessage;
@@ -349,6 +353,7 @@ class RPC {
 
     if (!bytesIsEqual(this.serverNonce, server_nonce)) {
       throw new Error('The server_nonce are not equal');
+
     }
 
     if (serverDHAnswer._ === 'mt_dh_gen_ok') {
@@ -359,7 +364,8 @@ class RPC {
       ).slice(4, 20);
 
       if (!bytesIsEqual(hash, serverDHAnswer.new_nonce_hash1)) {
-        throw new Error(`Invalid hash in mt_dh_gen_ok`);
+        // throw new Error(`Invalid hash in mt_dh_gen_ok`);
+        return this.reconnect('Invalid hash in mt_dh_gen_ok')
       }
 
       this.handleMessage = this.handleEncryptedMessage;
