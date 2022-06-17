@@ -116,7 +116,14 @@ class RPC {
   }
 
   async handleTransportMessage(buffer) {
-    this.handleMessage(buffer);
+
+    try {
+
+      this.handleMessage(buffer);
+    }
+    catch(e){
+      console.error(e)
+    }
   }
 
   async handlePQResponse(buffer) {
