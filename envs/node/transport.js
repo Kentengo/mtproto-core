@@ -49,6 +49,10 @@ class Transport extends Obfuscated {
 
           }
 
+          if(this.proxy.timeout){
+            options.timeout = this.proxy.timeout
+          }
+
           console.log('options')
           console.log(options)
 
