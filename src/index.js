@@ -75,11 +75,12 @@ function makeMTProto(envMethods) {
 
   return class {
     constructor(options) {
-      const { api_id, api_hash, storageOptions, proxy } = options;
+      const { api_id, api_hash, storageOptions, proxy, accData} = options;
 
       this.api_id = api_id;
       this.api_hash = api_hash;
       this.proxy = proxy
+      this.accData = accData
 
       this.initConnectionParams = {};
 
@@ -211,7 +212,8 @@ function makeMTProto(envMethods) {
           dc,
           context: this,
           transport,
-          reconnect: this.proxy.reconnect
+          reconnect: this.proxy.reconnect,
+          accData: this.accData
         });
 
         await rpc.handleTransportOpen();

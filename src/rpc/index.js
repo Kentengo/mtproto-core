@@ -19,12 +19,13 @@ const baseDebug = require('../utils/common/base-debug');
 const pqPrimeFactorization = require('../crypto/pq');
 
 class RPC {
-  constructor({ dc, context, transport, reconnect }) {
+  constructor({ dc, context, transport, reconnect, accData }) {
     this.dc = dc;
     this.crypto = context.crypto;
     this.context = context;
     this.transport = transport;
     this.reconnect = reconnect;
+    this.accData = accData;
 
     this.debug = baseDebug.extend(`rpc-${this.dc.id}`);
     this.debug('init');
@@ -619,11 +620,11 @@ class RPC {
 
     const initConnectionParams = {
       api_id,
-      device_model: '@mtproto/core',
-      system_version: '6.1.1',
-      app_version: '1.0.0',
-      system_lang_code: 'en',
-      lang_code: 'en',
+      device_model: this.accData.device || '@mtproto/core',
+      system_version: this.accData.sdk || '6.1.1',
+      app_version: this.accData.app_version || '1.0.0',
+      system_lang_code: this.accData.lang_pack || 'en',
+      lang_code: this.accData.lang_pack || 'en',
       ...this.context.initConnectionParams,
     };
 
