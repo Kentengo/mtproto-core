@@ -94,7 +94,9 @@ class Transport extends Obfuscated {
 
         if(this.proxy.failCounter>100){
           this.fail = true;
-          return await this.proxy.failureCallback()
+          // return await this.proxy.failureCallback()
+          await this.proxy.failureCallback()
+          return resolve()
           // return resolve()
         }
 
