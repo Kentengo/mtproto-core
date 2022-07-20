@@ -68,6 +68,7 @@ class RPC {
     const { type } = payload;
 
     this.debug('transport error', payload);
+    console.log(payload)
 
     // https://core.telegram.org/mtproto/mtproto-transports#transport-errors
     if (type === 'transport') {
