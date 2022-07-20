@@ -666,7 +666,7 @@ class RPC {
         method,
         params,
         resolve,
-        reject,
+        reject: resolve,
         isAck: false,
       });
     });

@@ -126,8 +126,8 @@ function makeMTProto(envMethods) {
       // try {
       const result = await rpc.call(method, params);
 
-      // console.log('result rpc call')
-      // console.log(result)
+      console.log('result rpc call')
+      console.log(result)
 
       if (syncAuth && result._ === 'auth.authorization') {
         await this.syncAuth(dcId);
