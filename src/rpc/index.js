@@ -655,6 +655,9 @@ class RPC {
       console.log('aaaaaaaaa')
 
       const messageId = await this.sendEncryptedMessage(bytes);
+
+      console.log(messageId)
+
       const messageIdAsKey = intsToLong(messageId[0], messageId[1]);
 
       this.messagesWaitResponse.set(messageIdAsKey, {
