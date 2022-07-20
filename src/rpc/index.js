@@ -660,6 +660,8 @@ class RPC {
 
       const messageIdAsKey = intsToLong(messageId[0], messageId[1]);
 
+      console.log(messageIdAsKey)
+
       this.messagesWaitResponse.set(messageIdAsKey, {
         method,
         params,
