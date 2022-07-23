@@ -123,22 +123,26 @@ function makeMTProto(envMethods) {
         return;
       }
 
-      // try {
-      const result = await rpc.call(method, params);
+      try {
+        const result = await rpc.call(method, params);
 
-      console.log('result rpc call')
-      console.log(result)
+        console.log('result rpc call')
+        console.log(result)
 
-      if (syncAuth && result._ === 'auth.authorization') {
-        await this.syncAuth(dcId);
+        if (syncAuth && result._ === 'auth.authorization') {
+          await this.syncAuth(dcId);
+        }
+
+        return result;
       }
+      catch(e){
+        console.log('131')
+        console.log('result rpc call')
+        console.log(e)
 
-      return result;
-      // }
-      // catch(e){
-      //   console.log('131')
-      //   console.log(e)
-      // }
+        return {error_code:'_131', error_message:e}
+        // console.log(result)
+      }
     }
 
     syncAuth(dcId) {
