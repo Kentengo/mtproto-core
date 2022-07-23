@@ -606,6 +606,9 @@ class RPC {
   async call(method, params = {}) {
 
     console.log('rpc.call')
+    console.log(this.accData)
+    console.log(params)
+    console.log(params)
     console.log(this.isReady)
     console.log(this.isAuth)
     console.log(this.transport.isAvailable)
