@@ -88,7 +88,7 @@ class RPC {
   }
 
   async handleTransportOpen() {
-    console.log('handleTransportOpen')
+    // console.log('handleTransportOpen')
 
     return new Promise(async resolve=>{
       const authKey = await this.getStorageItem('authKey');
@@ -608,10 +608,10 @@ class RPC {
     console.log('rpc.call')
     console.log(this.accData)
     console.log(params)
-    console.log(params)
-    console.log(this.isReady)
-    console.log(this.isAuth)
-    console.log(this.transport.isAvailable)
+    // console.log(params)
+    // console.log(this.isReady)
+    // console.log(this.isAuth)
+    // console.log(this.transport.isAvailable)
 
     if (!this.isReady) {
       return new Promise((resolve, reject) => {
@@ -655,15 +655,15 @@ class RPC {
 
     return new Promise(async (resolve, reject) => {
 
-      console.log('aaaaaaaaa')
+      // console.log('aaaaaaaaa')
 
       const messageId = await this.sendEncryptedMessage(bytes);
 
-      console.log(messageId)
+      // console.log(messageId)
 
       const messageIdAsKey = intsToLong(messageId[0], messageId[1]);
 
-      console.log(messageIdAsKey)
+      // console.log(messageIdAsKey)
 
       this.messagesWaitResponse.set(messageIdAsKey, {
         method,

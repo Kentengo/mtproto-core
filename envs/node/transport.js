@@ -59,8 +59,8 @@ class Transport extends Obfuscated {
 
           let socketProxy = await SocksClient.createConnection(options);
 
-          console.log('socketProxy')
-          console.log(socketProxy)
+          // console.log('socketProxy')
+          // console.log(socketProxy)
 
           this.socket = socketProxy.socket;
           // this.handleConnect.bind(this)
@@ -169,7 +169,7 @@ class Transport extends Obfuscated {
   async handleConnect() {
 
     return new Promise(async resolve=>{
-      console.log('handleConnect')
+      // console.log('handleConnect')
 
       const initialMessage = await this.generateObfuscationKeys();
 

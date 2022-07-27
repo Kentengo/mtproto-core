@@ -205,8 +205,8 @@ function makeMTProto(envMethods) {
 
         await transport.connect()
 
-        console.log('transport')
-        console.log(transport)
+        // console.log('transport')
+        // console.log(transport)
 
         if(transport.fail){
           return resolve(false);
