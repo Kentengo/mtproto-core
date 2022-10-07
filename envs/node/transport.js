@@ -160,9 +160,9 @@ class Transport extends Obfuscated {
       this.socket.destroy();
     }
 
-    // await this.connect();
+    await this.connect();
 
-    this.proxy.reconnect()
+    // this.proxy.reconnect()
 
   }
 
