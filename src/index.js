@@ -181,6 +181,12 @@ function makeMTProto(envMethods) {
       return this.storage.set('defaultDcId', dcId);
     }
 
+    destroy() {
+      for (const rpc of this.rpcs) {
+        // todo сделать дисконнект всех rpcs. 
+      }
+    }
+
     getRPC(dcId) {
 
       return new Promise(async resolve=> {

@@ -110,6 +110,13 @@ class Transport extends Obfuscated {
     })
   }
 
+  destroy() {
+    if (!this.socket.destroyed) {
+      this.socket.destroy();
+    }
+  }
+
+
   sleep(ms) {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
