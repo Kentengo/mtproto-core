@@ -21,7 +21,7 @@ class Transport extends Obfuscated {
   }
 
   connect() {
-    return new Promise(async resolve=> {
+    return new Promise(async resolve => {
 
       try {
 
@@ -30,51 +30,53 @@ class Transport extends Obfuscated {
         if (this.proxy && this.proxy.host && this.proxy.port && this.proxy.type) {
 
           const options = {
-            proxy      : {
+            proxy: {
               host: this.proxy.host, // ipv4 or ipv6 or hostname
               port: this.proxy.port,
               type: this.proxy.type // Proxy version (4 or 5)
             },
-            command    : 'connect', // SOCKS command (createConnection factory function only supports the connect command
+            command: 'connect', // SOCKS command (createConnection factory function only supports the connect command
             destination: {
               host: this.dc.ip,
               port: this.dc.port
             }
           }
 
-          if(this.proxy.login && this.proxy.pass && this.proxy.login!=='' && this.proxy.pass!==''){
+          if (this.proxy.login && this.proxy.pass && this.proxy.login !== '' && this.proxy.pass !== '') {
 
             options.proxy.userId = this.proxy.login
             options.proxy.password = this.proxy.pass
 
           }
 
-          if(this.proxy.timeout){
+          if (this.proxy.timeout) {
             options.timeout = this.proxy.timeout
           }
 
-          console.log('options')
-          console.log(options)
+          // console.log('options')
+          // console.log(options)
 
 
           let socketProxy = await SocksClient.createConnection(options);
 
-          // console.log('socketProxy')
-          // console.log(socketProxy)
+
 
           this.socket = socketProxy.socket;
           // this.handleConnect.bind(this)
           await this.handleConnect()
 
 
+
         } else {
 
 
           this.socket = net.connect(
-              this.dc.port,
-              this.dc.ip,
-              this.handleConnect.bind(this)
+            this.dc.port,
+            this.dc.ip,
+            this.handleConnect.bind(this)
           );
+
+          
         }
 
         this.socket.on('data', this.handleData.bind(this));
@@ -83,16 +85,16 @@ class Transport extends Obfuscated {
 
         this.debug('connect');
 
-        resolve()
+        resolve(this.socket)
       }
-      catch(e){
+      catch (e) {
         console.log('e:165')
         console.log(e)
 
         this.proxy.failCounter++
 
 
-        if(this.proxy.failCounter>100){
+        if (this.proxy.failCounter > 100) {
           this.fail = true;
           // return await this.proxy.failureCallback()
           await this.proxy.failureCallback()
@@ -112,7 +114,15 @@ class Transport extends Obfuscated {
 
   destroy() {
     if (!this.socket.destroyed) {
+      console.log(this.socket.readyState);
+
       this.socket.destroy();
+
+      console.log(`Try destroy`);
+
+    } else {
+      console.log(this.socket.readyState);
+      console.log("Already destroy");
     }
   }
 
@@ -166,8 +176,9 @@ class Transport extends Obfuscated {
     if (!this.socket.destroyed) {
       this.socket.destroy();
     }
+    console.log("Handle close");
 
-    await this.connect();
+    // await this.connect();
 
     // this.proxy.reconnect()
 
@@ -175,7 +186,7 @@ class Transport extends Obfuscated {
 
   async handleConnect() {
 
-    return new Promise(async resolve=>{
+    return new Promise(async resolve => {
       // console.log('handleConnect')
 
       const initialMessage = await this.generateObfuscationKeys();

@@ -112,8 +112,9 @@ function makeMTProto(envMethods) {
 
       const rpc = await this.getRPC(dcId);
 
-      // console.log('rpc')
       // console.log(rpc)
+
+
 
       if(!rpc){
         console.log('нет рпц')
@@ -126,19 +127,25 @@ function makeMTProto(envMethods) {
       try {
         const result = await rpc.call(method, params);
 
+        // console.log(result);
         if (syncAuth && result._ === 'auth.authorization') {
           await this.syncAuth(dcId);
         }
+        // rpc.transport.destroy()
 
         return result;
       }
       catch(e){
         console.log('RPC call error', e)
+        // rpc.transport.destroy()
 
         return {error_code:'_131', error_message:e}
         // console.log(result)
       }
     }
+
+    
+
 
     syncAuth(dcId) {
       const promises = [];
@@ -183,18 +190,19 @@ function makeMTProto(envMethods) {
 
     destroy() {
       for (const rpc of this.rpcs) {
+        // console.log(rpc);
+        rpc[1].transport.destroy()
         // todo сделать дисконнект всех rpcs. 
       }
     }
 
     getRPC(dcId) {
-
       return new Promise(async resolve=> {
         if (this.rpcs.has(dcId)) {
           return resolve(this.rpcs.get(dcId));
         }
-
         const dc = this.dcList.find(({id}) => id === dcId);
+
 
         if (!dc) {
           debug(`don't find DC ${dcId}`);
@@ -204,6 +212,7 @@ function makeMTProto(envMethods) {
 
         const transport = this.envMethods.createTransport(dc, this.crypto, this.proxy);
 
+        // console.log(transport);
         await transport.connect()
 
         // console.log('transport')

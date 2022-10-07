@@ -11,7 +11,10 @@ module.exports = class API {
 
   async call(method, params, options = {}) {
     try {
+      // console.log(this.mtproto);
       const result = await this.mtproto.call(method, params, options);
+
+      // console.log(result.hash);
 
       const { error_code, error_message } = result;
 
@@ -23,6 +26,7 @@ module.exports = class API {
 
         return this.call(method, params, options);
       }
+
 
       if (error_code === 303) {
         console.log('HELLO PHONE MIGRATION NEEDED!');
@@ -47,7 +51,13 @@ module.exports = class API {
 
       return result;
     } catch (error) {
+
       console.log(`${method} error:`, error);
     }
+  }
+
+
+  async destroyAllRpc() {
+    await this.mtproto.destroy()
   }
 }
