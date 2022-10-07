@@ -65,6 +65,9 @@ function makeMTProto(envMethods) {
     'createTransport',
   ];
 
+  console.log('required env methods', requiredEnvMethods)
+  console.log('available env methods', envMethods);
+
   const envMethodsIsValid = requiredEnvMethods.every(
       (methodName) => methodName in envMethods
   );
