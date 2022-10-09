@@ -12,7 +12,7 @@ class Transport extends Obfuscated {
     this.crypto = crypto;
     this.proxy = proxy
     this.fail = false;
-
+    this.needReconnect = true
     // this.connect();
   }
 
@@ -113,6 +113,8 @@ class Transport extends Obfuscated {
   }
 
   destroy() {
+    this.needReconnect = false
+    
     if (!this.socket.destroyed) {
       console.log(this.socket.readyState);
 
@@ -176,9 +178,11 @@ class Transport extends Obfuscated {
     if (!this.socket.destroyed) {
       this.socket.destroy();
     }
-    console.log("Handle close");
+    // console.log("Handle close");
 
-    // await this.connect();
+    if (this.needReconnect) {
+      await this.connect();
+    }
 
     // this.proxy.reconnect()
 

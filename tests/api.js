@@ -12,6 +12,17 @@ module.exports = class API {
   async call(method, params, options = {}) {
     try {
       // console.log(this.mtproto);
+      let timeoutStart = Date.now()
+      let socketState = "close"
+      while(socketState != "open") {
+        socketState = await this.mtproto.getSocketState(options)
+        console.log(socketState);
+        await sleep(500)
+        if (Date.now() - 30e3 > timeoutStart) break
+      }
+
+
+      if (socketState != "open") console.log("Тут надо вернуть ошибку");
       const result = await this.mtproto.call(method, params, options);
 
       // console.log(result.hash);
@@ -59,5 +70,6 @@ module.exports = class API {
 
   async destroyAllRpc() {
     await this.mtproto.destroy()
+    
   }
 }

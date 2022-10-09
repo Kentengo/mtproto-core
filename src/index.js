@@ -196,6 +196,13 @@ function makeMTProto(envMethods) {
       }
     }
 
+    async getSocketState(options = {}) {
+      const dcId = options.dcId || (await this.storage.get('defaultDcId')) || 2;
+      let rpc = await this.getRPC(dcId)
+      let state = await rpc.transport.socket.readyState
+      return state
+    }
+
     getRPC(dcId) {
       return new Promise(async resolve=> {
         if (this.rpcs.has(dcId)) {
