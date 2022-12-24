@@ -1,27 +1,27 @@
-const EventEmitter = require('events');
-const RPC = require('./rpc');
-const Crypto = require('./crypto');
-const Storage = require('./storage');
-const baseDebug = require('./utils/common/base-debug');
+const EventEmitter = require("events");
+const RPC = require("./rpc");
+const Crypto = require("./crypto");
+const Storage = require("./storage");
+const baseDebug = require("./utils/common/base-debug");
 
-const debug = baseDebug.extend('main');
+const debug = baseDebug.extend("main");
 
 const TEST_DC_LIST = [
   {
     id: 1,
-    ip: '149.154.175.10',
+    ip: "149.154.175.10",
     port: 80,
     test: true,
   },
   {
     id: 2,
-    ip: '149.154.167.40',
+    ip: "149.154.167.40",
     port: 443,
     test: true,
   },
   {
     id: 3,
-    ip: '149.154.175.117',
+    ip: "149.154.175.117",
     port: 443,
     test: true,
   },
@@ -30,96 +30,101 @@ const TEST_DC_LIST = [
 const PRODUCTION_DC_LIST = [
   {
     id: 1,
-    ip: '149.154.175.53',
+    ip: "149.154.175.53",
     port: 443,
   },
   {
     id: 2,
-    ip: '149.154.167.50',
+    ip: "149.154.167.50",
     port: 443,
   },
   {
     id: 3,
-    ip: '149.154.175.100',
+    ip: "149.154.175.100",
     port: 443,
   },
   {
     id: 4,
-    ip: '149.154.167.92',
+    ip: "149.154.167.92",
     port: 443,
   },
   {
     id: 5,
-    ip: '91.108.56.128',
+    ip: "91.108.56.128",
     port: 443,
   },
 ];
 
 function makeMTProto(envMethods) {
   const requiredEnvMethods = [
-    'SHA1',
-    'SHA256',
-    'PBKDF2',
-    'getRandomBytes',
-    'getLocalStorage',
-    'createTransport',
+    "SHA1",
+    "SHA256",
+    "PBKDF2",
+    "getRandomBytes",
+    "getLocalStorage",
+    "createTransport",
   ];
 
   const envMethodsIsValid = requiredEnvMethods.every(
-      (methodName) => methodName in envMethods
+    (methodName) => methodName in envMethods
   );
 
   if (!envMethodsIsValid) {
-    throw new Error('Specify all envMethods');
+    throw new Error("Specify all envMethods");
   }
 
   return class {
     constructor(options) {
-      const { api_id, api_hash, storageOptions, proxy, accData} = options;
+      const { api_id, api_hash, storageOptions, proxy, accData } = options;
 
       this.api_id = api_id;
       this.api_hash = api_hash;
-      this.proxy = proxy
-      this.accData = accData
+      this.proxy = proxy;
+      this.accData = accData;
 
       this.initConnectionParams = {};
 
-      this.dcList = !!options.test ? TEST_DC_LIST : (options.dcList ? [...options.dcList, PRODUCTION_DC_LIST] :PRODUCTION_DC_LIST);
+      this.dcList = !!options.test
+        ? TEST_DC_LIST
+        : options.dcList
+        ? [...options.dcList, PRODUCTION_DC_LIST]
+        : PRODUCTION_DC_LIST;
 
       this.envMethods = envMethods;
 
       this.rpcs = new Map();
       this.crypto = new Crypto(this.envMethods);
       this.storage = new Storage(
-          storageOptions,
-          this.envMethods.getLocalStorage
+        storageOptions,
+        this.envMethods.getLocalStorage
       );
 
-      if(options.dcList){
-        this.storage.set('defaultDcId', options.dcList[0].id)
+      if (options.dcList) {
+        this.storage.set("defaultDcId", options.dcList[0].id);
       }
 
       this.updates = new EventEmitter();
-
-
     }
 
     async call(method, params = {}, options = {}) {
       const { syncAuth = true } = options;
 
       // @TODO: defaultDcId may be a string
-      const dcId = options.dcId || (await this.storage.get('defaultDcId')) || 2;
+      const dcId = options.dcId || (await this.storage.get("defaultDcId")) || 2;
 
       const rpc = await this.getRPC(dcId);
 
       // console.log(rpc)
 
+      if (!rpc) {
+        console.log("нет рпц");
 
-
-      if(!rpc){
-        console.log('нет рпц')
-
-        return new Promise(reject=>{reject({error_code:'000', error_message:'Не удалось подключиться'})})
+        return new Promise((reject) => {
+          reject({
+            error_code: "000",
+            error_message: "Не удалось подключиться",
+          });
+        });
         // throw new Error({error_code:'000', error_message:'Не удалось подключиться'})
         return;
       }
@@ -128,24 +133,20 @@ function makeMTProto(envMethods) {
         const result = await rpc.call(method, params);
 
         // console.log(result);
-        if (syncAuth && result._ === 'auth.authorization') {
+        if (syncAuth && result._ === "auth.authorization") {
           await this.syncAuth(dcId);
         }
         // rpc.transport.destroy()
 
         return result;
-      }
-      catch(e){
-        console.log('RPC call error', e)
+      } catch (e) {
+        console.log("RPC call error", e);
         // rpc.transport.destroy()
 
-        return {error_code:'_131', error_message:e}
+        return { error_code: "_131", error_message: e };
         // console.log(result)
       }
     }
-
-    
-
 
     syncAuth(dcId) {
       const promises = [];
@@ -156,27 +157,27 @@ function makeMTProto(envMethods) {
         }
 
         const promise = this.call(
-            'auth.exportAuthorization',
-            {
-              dc_id: dc.id,
-            },
-            { dcId }
+          "auth.exportAuthorization",
+          {
+            dc_id: dc.id,
+          },
+          { dcId }
         )
-            .then((result) => {
-              return this.call(
-                  'auth.importAuthorization',
-                  {
-                    id: result.id,
-                    bytes: result.bytes,
-                  },
-                  { dcId: dc.id, syncAuth: false }
-              );
-            })
-            .catch((error) => {
-              debug(`error when copy auth to DC ${dc.id}`, error);
+          .then((result) => {
+            return this.call(
+              "auth.importAuthorization",
+              {
+                id: result.id,
+                bytes: result.bytes,
+              },
+              { dcId: dc.id, syncAuth: false }
+            );
+          })
+          .catch((error) => {
+            debug(`error when copy auth to DC ${dc.id}`, error);
 
-              return Promise.resolve();
-            });
+            return Promise.resolve();
+          });
 
         promises.push(promise);
       });
@@ -185,31 +186,30 @@ function makeMTProto(envMethods) {
     }
 
     setDefaultDc(dcId) {
-      return this.storage.set('defaultDcId', dcId);
+      return this.storage.set("defaultDcId", dcId);
     }
 
     destroy() {
       for (const rpc of this.rpcs) {
-        // console.log(rpc);
-        rpc[1].transport.destroy()
-        // todo сделать дисконнект всех rpcs. 
+        console.log(rpc[1]);
+        rpc[1].transport.destroy();
+        // todo сделать дисконнект всех rpcs.
       }
     }
 
     async getSocketState(options = {}) {
-      const dcId = options.dcId || (await this.storage.get('defaultDcId')) || 2;
-      let rpc = await this.getRPC(dcId)
-      let state = await rpc.transport.socket.readyState
-      return state
+      const dcId = options.dcId || (await this.storage.get("defaultDcId")) || 2;
+      let rpc = await this.getRPC(dcId);
+      let state = await rpc.transport.socket.readyState;
+      return state;
     }
 
     getRPC(dcId) {
-      return new Promise(async resolve=> {
+      return new Promise(async (resolve) => {
         if (this.rpcs.has(dcId)) {
           return resolve(this.rpcs.get(dcId));
         }
-        const dc = this.dcList.find(({id}) => id === dcId);
-
+        const dc = this.dcList.find(({ id }) => id === dcId);
 
         if (!dc) {
           debug(`don't find DC ${dcId}`);
@@ -217,15 +217,19 @@ function makeMTProto(envMethods) {
           return resolve(false);
         }
 
-        const transport = this.envMethods.createTransport(dc, this.crypto, this.proxy);
+        const transport = this.envMethods.createTransport(
+          dc,
+          this.crypto,
+          this.proxy
+        );
 
         // console.log(transport);
-        await transport.connect()
+        await transport.connect();
 
         // console.log('transport')
         // console.log(transport)
 
-        if(transport.fail){
+        if (transport.fail) {
           return resolve(false);
         }
 
@@ -234,7 +238,7 @@ function makeMTProto(envMethods) {
           context: this,
           transport,
           reconnect: this.proxy.reconnect,
-          accData: this.accData
+          accData: this.accData,
         });
 
         await rpc.handleTransportOpen();
@@ -242,7 +246,7 @@ function makeMTProto(envMethods) {
         this.rpcs.set(dcId, rpc);
 
         return resolve(rpc);
-      })
+      });
     }
 
     updateInitConnectionParams(params) {

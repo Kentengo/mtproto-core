@@ -114,14 +114,13 @@ class Transport extends Obfuscated {
 
   destroy() {
     this.needReconnect = false
-    
     if (!this.socket.destroyed) {
-      console.log(this.socket.readyState);
+      console.log('Socket status:',this.socket.readyState);
 
       this.socket.destroy();
 
-      console.log(`Try destroy`);
-
+      console.log(`Try destroy ${this.socket.destroyed}`);
+      
     } else {
       console.log(this.socket.readyState);
       console.log("Already destroy");
@@ -178,9 +177,10 @@ class Transport extends Obfuscated {
     if (!this.socket.destroyed) {
       this.socket.destroy();
     }
-    // console.log("Handle close");
+    console.log("Handle closed",this.needReconnect);
 
     if (this.needReconnect) {
+      console.log('Socket reconnected');
       await this.connect();
     }
 

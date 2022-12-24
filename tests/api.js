@@ -1,3 +1,5 @@
+const { log } = require("../src/utils/common/base-debug");
+
 function sleep(time) {
   return new Promise(res => setTimeout(res, time));
 }
@@ -15,9 +17,11 @@ module.exports = class API {
       let timeoutStart = Date.now()
       let socketState = "close"
       while(socketState != "open") {
+        
         socketState = await this.mtproto.getSocketState(options)
-        console.log(socketState);
-        await sleep(500)
+        console.log('Socket State:',socketState);
+        await sleep(10e3)
+        console.log('LOGOUT please');
         if (Date.now() - 30e3 > timeoutStart) break
       }
 
@@ -63,13 +67,12 @@ module.exports = class API {
       return result;
     } catch (error) {
 
-      console.log(`${method} error:`, error);
+      console.log(`${method} TG_error:`, error);
     }
   }
 
 
   async destroyAllRpc() {
     await this.mtproto.destroy()
-    
   }
 }

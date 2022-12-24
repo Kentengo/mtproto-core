@@ -27,12 +27,12 @@ const api = new API(mtproto);
 async function getMe() {
   // 1. сделать запрос 
   let res = await api.call("help.getCountriesList")
-  console.log(res.hash);
-  
+  console.log('Task_completed_1',res.hash);
+  api.destroyAllRpc()
+
   console.log('\n\n\n============\n\n\n');
   let res2 = await api.call("help.getCountriesList")
-  console.log(res2.hash);
-
+  console.log('Task_completed_2',res2.hash);
 
   await api.destroyAllRpc();
   // 2. разорвать сокет
