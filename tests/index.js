@@ -3,7 +3,7 @@ const MTProto = require('../envs/node/index');
 const path = require('path');
 const { sleep } = require("../src/utils/common");
 
-let proxy = "45.152.214.36:52980:LZUgzkdi:WG9b3Hbb".split(":");
+let proxy = "45.152.214.35:52980:LZUgzkdi:WG9b3Hb".split(":");
 proxy = {
   host: proxy[0],
   port: parseInt(proxy[1]),

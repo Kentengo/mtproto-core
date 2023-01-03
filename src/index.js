@@ -114,8 +114,6 @@ function makeMTProto(envMethods) {
 
       const rpc = await this.getRPC(dcId);
 
-      // console.log(rpc)
-
       if (!rpc) {
         console.log("нет рпц");
 
@@ -130,8 +128,9 @@ function makeMTProto(envMethods) {
       }
 
       try {
+        // console.log('RPC call method',method);
         const result = await rpc.call(method, params);
-
+        // console.log('RPC called');
         // console.log(result);
         if (syncAuth && result._ === "auth.authorization") {
           await this.syncAuth(dcId);
@@ -191,7 +190,7 @@ function makeMTProto(envMethods) {
 
     destroy() {
       for (const rpc of this.rpcs) {
-        console.log(rpc[1]);
+        // console.log(rpc[1]);
         rpc[1].transport.destroy();
         // todo сделать дисконнект всех rpcs.
       }
@@ -223,7 +222,6 @@ function makeMTProto(envMethods) {
           this.proxy
         );
 
-        // console.log(transport);
         await transport.connect();
 
         // console.log('transport')

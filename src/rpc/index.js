@@ -38,6 +38,7 @@ class RPC {
     this.updateSession();
 
     // this.transport.on('open', ()=>{ console.log('Был опен'); this.handleTransportOpen()});
+    this.transport.on('open', this.handleTransportOpen.bind(this))
     this.transport.on('error', this.handleTransportError.bind(this));
     this.transport.on('message', this.handleTransportMessage.bind(this));
 
@@ -61,12 +62,13 @@ class RPC {
   }
 
   get isReady() {
+    // console.log(`RPC_transport_socket`, this.transport.isAvailable)
     return this.isAuth && this.transport.isAvailable;
   }
 
   async handleTransportError(payload) {
 
-    console.log('Был error');
+    console.log('RPC ERROR:');
     const { type } = payload;
 
     this.debug('transport error', payload);
@@ -83,24 +85,27 @@ class RPC {
       // transport flood
       if (payload.code === 429) {
         this.debug('transport flood');
+        // console.log('Transport flood');
       }
     }
+    
   }
 
   async handleTransportOpen() {
-    // console.log('handleTransportOpen')
+    console.log('Socket: opened');
 
     return new Promise(async resolve=>{
       const authKey = await this.getStorageItem('authKey');
       const serverSalt = await this.getStorageItem('serverSalt');
 
-      // console.log(authKey)
-      // console.log(serverSalt)
+      // console.log('RPC_open_authKey',authKey)
+      // console.log('RPC_open_serverSalt',serverSalt)
 
       if (authKey && serverSalt) {
         this.handleMessage = this.handleEncryptedMessage;
         this.isAuth = true;
-        this.sendWaitMessages();
+        
+        // this.sendWaitMessages();
 
         // This request is necessary to ensure that you start interacting with the server. If we have not made any request, the server will not send us updates.
         this.call('help.getConfig')
@@ -112,6 +117,7 @@ class RPC {
               this.debug(`error when calling the method help.getConfig:`, error);
               return resolve()
             });
+        this.sendWaitMessages();
       } else {
         this.nonce = this.crypto.getRandomBytes(16);
         this.handleMessage = this.handlePQResponse;
@@ -293,7 +299,7 @@ class RPC {
     const b = bytesToBigInt(this.crypto.getRandomBytes(256));
     let authKey = await this.getStorageItem('authKey')
 
-    console.log(authKey)
+    // console.log('RPC_AUTH_KEY',authKey)
 
     if(!authKey){
       authKey = bigIntToBytes(this.gA.modPow(b, this.dhPrime));
@@ -368,7 +374,7 @@ class RPC {
       ).slice(4, 20);
 
       if (!bytesIsEqual(hash, serverDHAnswer.new_nonce_hash1)) {
-        // throw new Error(`Invalid hash in mt_dh_gen_ok`);
+        throw new Error('Invalid hash in mt_dh_gen_ok');// weird fix
         return this.reconnect('Invalid hash in mt_dh_gen_ok')
       }
 
@@ -413,6 +419,7 @@ class RPC {
   }
 
   async sendWaitMessages() {
+    // console.log('RPC_Sending messages', this.messagesWaitResponse);
     // Resend unacknowledged messages
     for (let message of this.messagesWaitResponse.values()) {
       if (message.isAck) {
@@ -421,7 +428,7 @@ class RPC {
       const { method, params, resolve, reject } = message;
       this.call(method, params).then(resolve).catch(reject);
     }
-
+    // console.log('RPC_Sending wait Auth', this.messageWaitAuth);
     this.messagesWaitAuth.forEach((message) => {
       const { method, params, resolve, reject } = message;
       this.call(method, params).then(resolve).catch(reject);
@@ -531,7 +538,7 @@ class RPC {
       }
 
       const waitMessage = this.messagesWaitResponse.get(message.bad_msg_id);
-
+      // console.log('RPC_waitMessage', waitMessage);
       if (waitMessage) {
         this.call(waitMessage.method, waitMessage.params)
             .then(waitMessage.resolve)
@@ -580,10 +587,19 @@ class RPC {
 
       const waitMessage = this.messagesWaitResponse.get(message.req_msg_id);
 
+      // console.log('RPC_message.result',message.result);
+      
+      
       if (message.result._ === 'mt_rpc_error') {
         waitMessage.reject(message.result);
       } else {
-        waitMessage.resolve(message.result);
+        if (waitMessage){
+          // console.log('RPC_message_res',waitMessage)
+          waitMessage.resolve(message.result);
+        } 
+        //else {console.log('RPC_SKIP_RES',waitMessage);
+        
+        
       }
 
       this.messagesWaitResponse.delete(message.req_msg_id);
@@ -604,6 +620,7 @@ class RPC {
   }
 
   async call(method, params = {}) {
+    // console.log(`RPC_IsReady: ${this.isReady}`);
     if (!this.isReady) {
       return new Promise((resolve, reject) => {
         this.messagesWaitAuth.push({ method, params, resolve, reject });
@@ -647,7 +664,6 @@ class RPC {
     return new Promise(async (resolve, reject) => {
 
       // console.log('aaaaaaaaa')
-
       const messageId = await this.sendEncryptedMessage(bytes);
 
       // console.log(messageId)

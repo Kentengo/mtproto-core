@@ -17,7 +17,9 @@ class Transport extends Obfuscated {
   }
 
   get isAvailable() {
+    // return this.socket.closed ? false : true;
     return this.socket.writable;
+
   }
 
   connect() {
@@ -58,6 +60,7 @@ class Transport extends Obfuscated {
 
 
           let socketProxy = await SocksClient.createConnection(options);
+    
 
 
 
@@ -89,7 +92,12 @@ class Transport extends Obfuscated {
       }
       catch (e) {
         console.log('e:165')
-        console.log(e)
+        if (e.message.includes('ENETUNREACH')){
+          console.log('Socket: BAD CONNECTION',e.message);
+        }else{
+          console.log(e);
+        }
+        
 
         this.proxy.failCounter++
 
@@ -115,15 +123,14 @@ class Transport extends Obfuscated {
   destroy() {
     this.needReconnect = false
     if (!this.socket.destroyed) {
-      console.log('Socket status:',this.socket.readyState);
 
       this.socket.destroy();
-
-      console.log(`Try destroy ${this.socket.destroyed}`);
+      // this.socket.end()
+      console.log(`Socket: destroyed`);
       
     } else {
       console.log(this.socket.readyState);
-      console.log("Already destroy");
+      console.log("Socket already destroyed!");
     }
   }
 
@@ -168,19 +175,20 @@ class Transport extends Obfuscated {
   }
 
   async handleError(error) {
+    // console.log('Socket handle: error');
     this.emit('error', {
       type: 'socket',
     });
   }
 
   async handleClose(hadError) {
+    // console.log('Socket handle: close');
     if (!this.socket.destroyed) {
-      this.socket.destroy();
+      this.socket.close();
     }
-    console.log("Handle closed",this.needReconnect);
 
     if (this.needReconnect) {
-      console.log('Socket reconnected');
+      console.log('Socket: reconnect');
       await this.connect();
     }
 
@@ -191,7 +199,7 @@ class Transport extends Obfuscated {
   async handleConnect() {
 
     return new Promise(async resolve => {
-      // console.log('handleConnect')
+      // console.log('Socket handle: connect')
 
       const initialMessage = await this.generateObfuscationKeys();
 
