@@ -128,7 +128,7 @@ function makeMTProto(envMethods) {
       }
 
       try {
-        // console.log('RPC call method',method);
+        console.log('RPC call method',method);
         const result = await rpc.call(method, params);
         // console.log('RPC called');
         // console.log(result);
